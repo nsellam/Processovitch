@@ -32,11 +32,11 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity MemInstr is
     Port ( address : in  STD_LOGIC_VECTOR (7 downto 0);
            CLK  : in  STD_LOGIC;
-           COUT : out  STD_LOGIC_VECTOR (7 downto 0));
+           COUT : out  STD_LOGIC_VECTOR (31 downto 0));
 end MemInstr;
 
 architecture Behavioral of MemInstr is
-	type MATRIX is array(0 to 255) of std_logic_vector(7 downto 0);	--type matrice 256x8, créée pour modéliser la ROM, c'est un tableau de 256 mots de 8bits
+	type MATRIX is array(0 to 255) of std_logic_vector(31 downto 0);	--type matrice 256x8, créée pour modéliser la ROM, c'est un tableau de 256 mots de 8bits
 	signal ROM : MATRIX;																--notre ROM
 begin
 	InstructionMemory : process (CLK)

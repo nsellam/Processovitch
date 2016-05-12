@@ -46,13 +46,17 @@ end ALU;
 architecture Behavioral of ALU is
 	constant NOP : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0000";
 	constant ADD : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0001";
-	constant SUB : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0010";
-	constant IdA : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0011";
-	constant IdB : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0100";
-	constant ET  : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0101";
-	constant OU  : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0110";
-	constant XOU : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0111";
-	constant NON : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1000";
+	constant MUL : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0010";
+	constant SUB : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0011";
+	constant DIV : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0100";
+	-- B"0101" est réservé à l'instruction COP
+	-- B"0110" est réservé à l'instruction AFC
+	-- B"0111" est réservé à l'instruction LOAD
+	-- B"1000" est réservé à l'instruction STORE
+	constant ET  : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1100";
+	constant OU  : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1101";
+	constant XOU : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1110";
+	constant NON : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1111";
 	--constant LSL : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1001";
 	--constant LSR : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1010";
 	constant NUL : STD_LOGIC_VECTOR(Nb-1 downto 0) := B"0000_0000";
