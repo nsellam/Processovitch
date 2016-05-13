@@ -19,6 +19,7 @@
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use WORK.ProcessorPack.ALL;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -30,49 +31,47 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 entity DataPath is
-	Generic (DataSize : Natural := 8; --taille des données (en bits) 
-				NbReg : Natural := 4;	 --nombre de bits pour coder les registres
-				NbIns : Natural := 4);   --nombre de bits pour coder les instructions 
-   Port ( CLK : in  STD_LOGIC);
+   Port (ASM : in  WORD; 
+			CLK : in  STD_LOGIC);
 end DataPath;
 
 architecture Behavioral of DataPath is
-	component Pipe
+	component PipeLine
 		Port ( 
-			inA  : in  STD_LOGIC_VECTOR (7 downto 0);
-			inB  : in  STD_LOGIC_VECTOR (7 downto 0);
-			inOP : in  STD_LOGIC_VECTOR (NbIns-1 downto 0);
-			inC  : in  STD_LOGIC_VECTOR (7 downto 0);
-			outA : out STD_LOGIC_VECTOR (7 downto 0);
-			outB : out STD_LOGIC_VECTOR (7 downto 0);
-			outOP: out STD_LOGIC_VECTOR (3 downto 0);
-			outC : out STD_LOGIC_VECTOR (7 downto 0);
+			inA  : in  WORD;
+			inB  : in  WORD;
+			inOP : in  OPT;
+			inC  : in  WORD;
+			outA : out WORD;
+			outB : out WORD;
+			outOP: out OPT;
+			outC : out WORD;
 			CLK  : in  STD_LOGIC);
 	end component;
 	component MemInstr
 		Port ( 
-			address : in  STD_LOGIC_VECTOR (7 downto 0);
+			address : in  WORD;
 			CLK  : in  STD_LOGIC;
-			COUT : out STD_LOGIC_VECTOR (31 downto 0));
+			COUT : out INSTR);
 	end component;
 	component RegBench
 		Port ( 
-			aA : in  STD_LOGIC_VECTOR (NbReg-1 downto 0);	
-			aB : in  STD_LOGIC_VECTOR (NbReg-1 downto 0);		
-			aW : in  STD_LOGIC_VECTOR (NbReg-1 downto 0);		
+			aA : in  RegAddr;	
+			aB : in  RegAddr;		
+			aW : in  RegAddr;		
 			W  : in  STD_LOGIC;										
-			DATA: in STD_LOGIC_VECTOR (DataSize-1 downto 0);		
+			DATA: in WORD;		
 			RST : in STD_LOGIC;									
 			CLK : in STD_LOGIC;									
-			QA : out STD_LOGIC_VECTOR (DataSize-1 downto 0);		
-			QB : out STD_LOGIC_VECTOR (DataSize-1 downto 0));		
+			QA : out WORD;		
+			QB : out WORD);		
 	end component;
 	component ALU
 		Port ( 
-			A : in  STD_LOGIC_VECTOR (DataSize-1 downto 0);
-			B : in  STD_LOGIC_VECTOR (DataSize-1 downto 0);
-			OP : in STD_LOGIC_VECTOR (NbIns-1 downto 0);
-			S : buffer STD_LOGIC_VECTOR (DataSize-1 downto 0);
+			A : in  WORD;
+			B : in  WORD;
+			OP : in OPT;
+			S : buffer WORD;
 			C : out STD_LOGIC;
 			N : out STD_LOGIC;
 			Z : out STD_LOGIC;
@@ -80,131 +79,128 @@ architecture Behavioral of DataPath is
 	end component;
 	component MemData
 		Port ( 
-			address : in  STD_LOGIC_VECTOR (7 downto 0);
-			CIN : in  STD_LOGIC_VECTOR (DataSize-1 downto 0);		
+			address : in  WORD;
+			CIN : in  WORD;		
 			RW  : in  STD_LOGIC;	
 			RST : in  STD_LOGIC;	
 			CLK : in  STD_LOGIC;	
-			COUT: out STD_LOGIC_VECTOR (DataSize-1 downto 0));
+			COUT: out WORD);
 	end component;
 	
 	-- SIGNAUX
-	signal A_MI2PLiDi: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal A_PLiDi2PDiEx: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal A_PDiEx2PExMem: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal A_PExMem2PMemRe: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal A_PMemRe2RB: STD_LOGIC_VECTOR(DataSize-1 downto 0);
+	type inPipe is
+		record
+			A, B, C : WORD;
+			OP: OPT;
+		end record;
+	type MUX is
+		record
+			RB, UAL, MD1, MD2 : WORD;
+		end record;
 	
-	signal B_MI2PLiDi: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal B_PLiDi2RB: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal B_RB2RBMUX: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal B_PDiEx2UAL: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal B_RBMUX2PDiEx: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal B_UAL2PUALMUX: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal B_UALMUX2PExMem: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal B_MI2PLiDi: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal B_PLiDi2RB: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal B_RB2RBMUX: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal B_B_MDMUX2PMemRe: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	
-	signal C_MI2PLiDi: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal C_PLiDi2RB: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal C_RB2PDiEx: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal C_PDiEx2UAL: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	
-	signal OP_MI2PLiDi: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal OP_PLiDi2PDiEx: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal OP_PDiEx2PExMem: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal C_MI2PLiDi: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal C_MI2PLiDi: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal C_MI2PLiDi: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal C_MI2PLiDi: STD_LOGIC_VECTOR(DataSize-1 downto 0);
-	signal C_MI2PLiDi: STD_LOGIC_VECTOR(DataSize-1 downto 0);
+			-- SIGNAUX
+	signal inPLiDi : inPipe;
+	signal inPDiEx : inPipe;
+	signal inPExMem: inPipe; -- .C non utilisé
+	signal inPMemRe: inPipe; -- .C non utilisé
+	signal inRB: inPipe;		 -- .OP non utilisé
+	signal inUAL: inPipe;	 -- .A et .OP non utilisés
+	signal inMUX: MUX;		 -- B
+	signal inMD: WORD;		 -- B
+	signal inLC: OPT;			 -- OP
+	signal inDATARB: WORD;	 -- B
 	
 begin
 	-- TODO LIST
-	-- [++++-]Implémentation des wire
+	-- [+++++]Implémentation des wire
 	-- [+++++]LC à faire
 	-- [+++++]MUX à faire?
 	-- [+++++]MemInstr vers Pipe
-	-- [-----]CLK à implémenter
-	-- [-----]Package 
+	-- [+++++]CLK à implémenter
+	-- [+++++]Package 
+	-- [-----]Tests
 
-	--OP:
-	 -- AFC (write, @W <- A) [ok]
-	 -- COP (write, @W <- R(A) [
-	 -- 
-	 -- 
-	 -- 
-	 -- 
-	 -- 
 	MI: MemInstr port map (
-		CLK <= CLK,
-		COUT(31 downto 24) => OP_MI2PLiDi,	
-		COUT(23 downto 16) => A_MI2PLiDi,
-		COUT(15 downto  8) => B_MI2PLiDi,
-		COUT( 7 downto  0) => C_MI2PLiDi);
+		address => ASM,
+		CLK => CLK,
+		COUT(31 downto 28) => inRB.OP, -- inRB.OP n'est de toute façon jamais utilisé
+		COUT(27 downto 24) => inPLiDi.OP,	
+		COUT(23 downto 16) => inPLiDi.A,
+		COUT(15 downto  8) => inPLiDi.B,
+		COUT( 7 downto  0) => inPLiDi.C);
 	PLiDi: PipeLine port map (
-		CLK <= CLK,
-		inA  => A_MI2PLiDi,			-- MI <---A_MI2PLiDi---> PLiDi (inA)
-		inB  => B_MI2PLiDi,			-- MI <---B_MI2PLiDi---> PLiDi (inB)
-		inC  => C_MI2PLiDi,			-- MI <---C_MI2PLiDi---> PLiDi (inC)
-		inOP => OP_MI2PLiDi,			-- MI <---OP_MI2PLiDi---> PLiDi (inOP)
-		outA => A_PLiDi2PDiEx,		-- P1(outA)  <---A_PLiDi2PDiEx--> P2(inA)
-		outB => B_PLiDi2RB,			-- P1(outB)  <----B_PLiDi2RB----> MUX
-		outC => C_PLiDi2RB,			-- P1(outC)  <----C_PLiDi2RB----> RB(aB)
-		outOP => OP_PLiDi2PDiEx);	-- P1(outOP) <--OP_PLiDi2PDiEx--> P2(inOP)
+		CLK => CLK,
+		inA  => inPLiDi.A,			-- MI <---A_MI2PLiDi---> PLiDi (inA)
+		inB  => inPLiDi.B,			-- MI <---B_MI2PLiDi---> PLiDi (inB)
+		inC  => inPLiDi.C,			-- MI <---C_MI2PLiDi---> PLiDi (inC)
+		inOP => inPLiDi.OP,			-- MI <---OP_MI2PLiDi---> PLiDi (inOP)
+		outA => inPDiEx.A,		-- P1(outA)  <---A_PLiDi2PDiEx--> P2(inA)
+		outB => inRB.B,			-- P1(outB)  <----B_PLiDi2RB----> MUX
+		outC => inRB.C,			-- P1(outC)  <----C_PLiDi2RB----> RB(aB)
+		outOP => inPDiEx.OP);	-- P1(outOP) <--OP_PLiDi2PDiEx--> P2(inOP)
 	RB : RegBench port map (
-		aA => B_PLiDi2RB,				
-		aB => C_PLiDi2RB,				
-		QA => B_RB2RBMUX,				
-		QB => C_RB2PDiEx,				
-		aW => A_PMemRe2RB,
-		W  => not(OP_PMemRe2LC(3) and not(OP_PMemRe2LC(2))), -- car STORE = B"1000" est la seule instruction à ne pas écrire dans les registres (1W, 0R)
-		DATA => B_PMemRe2RB);
-	B_RBMUX2PDiEx <=	B_PLiDi2RB when (OP = AFC) else
-							B_RB2RBMUX; -- P2(inB) vaut P1(outB) si AFC, RB(QA) sinon
+		CLk => CLK,
+		RST => '1',
+		aA => inRB.B(RegCnt-1 downto 0),				
+		aB => inRB.C(RegCnt-1 downto 0),				
+		QA => inMUX.RB,				
+		QB => inPDiEx.C,				
+		aW => inRB.A(RegCnt-1 downto 0),			-- vient de P_Mem/Re
+		W  => not(inLC(3) and not(inLC(2))), -- car STORE = B"1000" est la seule instruction à ne pas écrire dans les registres (1W, 0R)
+		DATA => inDATARB);
+	inPDiEx.B <=	inRB.B when (inPDiEx.OP = AFC) else
+							inMUX.RB; -- P2(inB) vaut P1(outB) si AFC, RB(QA) sinon
 	PDiEx: PipeLine port map (
-		CLK <= CLK,
-		inA  => A_PLiDi2PDiEx,		
-		inB  => B_RBMUX2PDiEx,			-- MUX    <---B_RBMUX2PDiEx--> P2(inB)
-		inC  => C_RB2PDiEx,			-- RB(QB)    <----C_RB2PDiEx----> P2(inC)
-		inOP => OP_PLiDi2PDiEx,		-- P1(outOP) <--OP_PLiDi2PDiEx--> P2(inOP)
-		outA => A_PDiEx2PExMem,		-- P2(outA)  <--A_PDiEx2PExMem--> P3(inA)
-		outB => B_PDiEx2UAL,			-- P2(outB)  <----B_PDiEx2UAL---> UAL(A)
-		outC => C_PDiEx2UAL,			-- P2(outC)  <----B_PDiEx2UAL---> UAL(B)
-		outOP => OP_PDiEx2PExMem);
+		CLK => CLK,
+		inA  => inPDiEx.A,		
+		inB  => inPDiEx.B,			-- MUX    <---B_RBMUX2PDiEx--> P2(inB)
+		inC  => inPDiEx.C,			-- RB(QB)    <----C_RB2PDiEx----> P2(inC)
+		inOP => inPDiEx.OP,		-- P1(outOP) <--OP_PLiDi2PDiEx--> P2(inOP)
+		outA => inPExMem.A,		-- P2(outA)  <--A_PDiEx2PExMem--> P3(inA)
+		outB => inUAL.B,			-- P2(outB)  <----B_PDiEx2UAL---> UAL(A)
+		outC => inUAL.C,			-- P2(outC)  <----B_PDiEx2UAL---> UAL(B)
+		outOP => inPExMem.OP);
 	UAL: ALU port map (
-		A => B_PDiEx2UAL,
-		B => C_PDiEx2UAL,
-		S => B_UAL2PUALMUX,
-		OP	=> OP_PDiEx2PExMem); --on a matché les OP de l'ALU avec les OP de l'assembleur
-	B_UALMUX2PExMem <= B_PDiEx2UAL when ((OP = COP) OR (OP = AFC) OR (OP = STORE) OR (OP = LOAD)) else
-						 B_UAL2PUALMUX;
+		A => inUAL.B,
+		B => inUAL.C,
+		S => inMUX.UAL,
+		OP	=> inPExMem.OP); --on a matché les OP de l'ALU avec les OP de l'assembleur
+	inPExMem.B <= inUAL.B when (
+													 (inPExMem.OP = COP) OR 
+													 (inPExMem.OP = AFC) OR 
+													 (inPExMem.OP = STR) OR 
+													 (inPExMem.OP = LDR)) else
+							 inMUX.UAL;
 	PExMem: PipeLine port map (
-		CLK <= CLK,
-		inA  => A_PDiEx2PExMem,		-- P3(inA)  est matché avec P3(outA)
-		inB  => B_PDiEx2PExMem,		-- P2
-		inOP => OP_UAL2PExMem,
-		outA => A_PExMem2PMemRe,		-- P3(outA) <----A_PExMem2PMemRe----> P4(inA)
-		outB => B_PExMem2MD,
-		outOP => OP_PExMem2PMemRe);
-	B_PExMemMUX <= A_PExMem2PMemRe when (OP = STORE) else 	-- car on a STORE @i Rj
-						B_PExMem2MD when (OP = LOAD);			-- car on a LOAD  Ri @j
+		CLK => CLK,
+		inA  => inPExMem.A,		-- P3(inA)  est matché avec P3(outA)
+		inB  => inPExMem.B,		-- P2
+		inC  => ZERO,
+		inOP => inPExMem.OP,
+		outA => inPMemRe.A,		-- P3(outA) <----A_PExMem2PMemRe----> P4(inA)
+		outB => inMD,
+		outC => ZERO,
+		outOP => inPMemRe.OP);
+	inMUX.MD1 <= inPMemRe.A when (inPMemRe.OP = STR) else 	-- car on a STORE @i Rj
+					 inMD when (inPMemRe.OP = LDR);			-- car on a LOAD  Ri @j
 	MD: MemData port map (
-		address => B_PExMemMUX,
-		CIN => B_PExMem2MD,
-		COUT => B_MD2PMDMUX,
-		RW => not(OP_PExMem2MemRe(3) and not(OP_PExMem2MemRe(2)))); --0W, 1R, donc STORE="1000"->'0' 
-	B_MDMUX2PMemRe <= B_MD2PMDMUX when (OP = LOAD) else --on ne cherche dans la RAM que lorsqu'on LOAD
-							B_PExMem2MD; --sinon on récup B en sortie du Pipe
+		CLK => CLK,
+		address => inMUX.MD1,
+		CIN => inMD,
+		COUT => inMUX.MD2,
+		RST => '1',
+		RW => not(inPMemRe.OP(3) and not(inPMemRe.OP(2)))); --0W, 1R, donc STORE="1000"->'0' 
+	inPMemRe.B <= inMUX.MD2 when (inPMemRe.OP = LDR) else --on ne cherche dans la RAM que lorsqu'on LOAD
+							inMD; --sinon on récup B en sortie du Pipe
 	PMemRe: PipeLine port map (
-		CLK <= CLK,
-		inA  => A_PExMem2PMemRe,	-- P4(inA)  est matché avec P4(outA)
-		inB  => B_MDMUX2PMemRe,
-		inOP => OP_PExMem2PMemRe,
-		outA => A_PMemRe2RB,			-- P4(outA) <----PMemRe2RB----> RB(aW) --on passe outA en adresse écriture de l'ALU
-		outB => B_PMemRe2RB,
-		outOP => OP_PMemRe2LC);
+		CLK => CLK,
+		inA  => inPMemRe.A,	-- P4(inA)  est matché avec P4(outA)
+		inB  => inPMemRe.B,
+		inC  => ZERO,
+		inOP => inPMemRe.OP,
+		outA => inRB.A,			-- P4(outA) <----PMemRe2RB----> RB(aW) --on passe outA en adresse écriture du banc de registre
+		outB => inDATARB,
+		outC => ZERO,
+		outOP => inLC);
 end Behavioral;
 

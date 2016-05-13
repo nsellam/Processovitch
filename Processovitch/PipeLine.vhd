@@ -19,6 +19,7 @@
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use WORK.ProcessorPack.ALL;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -30,14 +31,14 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 entity PipeLine is
-    Port ( inA  : in  STD_LOGIC_VECTOR (7 downto 0);
-           inB  : in  STD_LOGIC_VECTOR (7 downto 0);
-           inOP : in  STD_LOGIC_VECTOR (3 downto 0);
-           inC  : in  STD_LOGIC_VECTOR (7 downto 0);
-           outA : out STD_LOGIC_VECTOR (7 downto 0);
-           outB : out STD_LOGIC_VECTOR (7 downto 0);
-           outOP: out STD_LOGIC_VECTOR (3 downto 0);
-           outC : out STD_LOGIC_VECTOR (7 downto 0);
+    Port ( inA  : in  WORD;
+           inB  : in  WORD;
+           inOP : in  OPT;
+           inC  : in  WORD;
+           outA : out WORD;
+           outB : out WORD;
+           outOP: out OPT;
+           outC : out WORD;
            CLK  : in  STD_LOGIC);
 end PipeLine;
 

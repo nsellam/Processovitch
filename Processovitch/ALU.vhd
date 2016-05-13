@@ -20,6 +20,7 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL; 		--librairie des STD_LOGIC et STD_LOGIC_VECTOR
 use IEEE.STD_LOGIC_UNSIGNED.ALL; --librairie des opérations (+,-,*, etc.)
+use WORK.ProcessorPack.ALL;
 
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -31,12 +32,10 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL; --librairie des opérations (+,-,*, etc.)
 --use UNISIM.VComponents.all;
 
 entity ALU is
-		Generic ( Nb : Natural := 8; 					--taille des données
-					 MAX : Natural := 4) ; 				--nombre de bits pour coder les instructions
-    Port ( A : in  STD_LOGIC_VECTOR (Nb-1 downto 0);
-           B : in  STD_LOGIC_VECTOR (Nb-1 downto 0);
-           OP : in STD_LOGIC_VECTOR (MAX-1 downto 0);
-           S : buffer STD_LOGIC_VECTOR (Nb-1 downto 0); --S est de type buffer : c'est un out qu'on peut aussi passer en paramètre (voir Z)
+    Port ( A : in  WORD;
+           B : in  WORD;
+           OP : in OPT;
+           S : buffer WORD; --S est de type buffer : c'est un out qu'on peut aussi passer en paramètre (voir Z)
            C : out STD_LOGIC;
            N : out STD_LOGIC;
            Z : out STD_LOGIC;
@@ -44,25 +43,11 @@ entity ALU is
 end ALU;
 
 architecture Behavioral of ALU is
-	constant NOP : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0000";
-	constant ADD : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0001";
-	constant MUL : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0010";
-	constant SUB : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0011";
-	constant DIV : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"0100";
-	-- B"0101" est réservé à l'instruction COP
-	-- B"0110" est réservé à l'instruction AFC
-	-- B"0111" est réservé à l'instruction LOAD
-	-- B"1000" est réservé à l'instruction STORE
-	constant ET  : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1100";
-	constant OU  : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1101";
-	constant XOU : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1110";
-	constant NON : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1111";
-	--constant LSL : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1001";
-	--constant LSR : STD_LOGIC_VECTOR(MAX-1 downto 0) := B"1010";
-	constant NUL : STD_LOGIC_VECTOR(Nb-1 downto 0) := B"0000_0000";
-	signal A11 : STD_LOGIC_VECTOR(Nb downto 0);
-	signal B11 : STD_LOGIC_VECTOR(Nb downto 0);
-	signal S11 : STD_LOGIC_VECTOR(Nb downto 0);
+	-- signaux à DataSize+1 pour vérifier les débordements
+	signal A11 : STD_LOGIC_VECTOR(DataSize downto 0);
+	signal B11 : STD_LOGIC_VECTOR(DataSize downto 0);
+	signal S11 : STD_LOGIC_VECTOR(DataSize downto 0);
+	constant ZERO11 : STD_LOGIC_VECTOR(DataSize downto 0) := '0' & ZERO; -- à check
 begin
 	A11 <= '0' & A;		-- [0|aaaa|aaaa] permet de détecter les débordements sur le MSB
 	B11 <= '0' & B;
@@ -71,14 +56,12 @@ begin
 		  (A OR B) when (OP = OU) else		-- si OU, S vaut A|B
 		  (A XOR B) when (OP = XOU) else		-- si XOU, S vaut AxorB
 		  (NOT A) when (OP = NON) else		-- si NON, S vaut notA
-		  A when (OP = IdA) else				-- si IdA, S vaut A
-		  B when (OP = IdB) else				-- si IdB, S vaut B
-		  S11(Nb - 1 downto 0);					-- sinon, S vaut les 8 bits de poids faible de S11
+		  S11(DataSize-1 downto 0);			-- sinon, S vaut les 8 bits de poids faible de S11
 
-	V <= '1' when (OP = ADD AND S11(Nb) = '1') else '0'; --Overflow si l'addition fait déborder S11 [1|ssss|ssss]
-	C <= '1' when (OP = ADD AND S11(Nb) = '1') else '0'; --idem
-	N <= '1' when (OP = SUB AND S11(Nb) = '1') else '0'; --Neg si la soustraction fait déborder S11 
-	Z <= '1' when ((S OR NUL) = 0) else '0';				  --à confirmer avec le prof : 0xFE + 0x02 = 0x00? (on lève le flag?)
+	V <= '1' when (OP = ADD AND S11(DataSize) = '1') else '0';	--Overflow si l'addition fait déborder S11 [1|ssss|ssss]
+	C <= '1' when (OP = ADD AND S11(DataSize) = '1') else '0';	--idem
+	N <= '1' when (OP = SUB AND S11(DataSize) = '1') else '0'; 	--Neg si la soustraction fait déborder S11 
+	Z <= '1' when ((S OR ZERO) = 0) else '0';				  			--à confirmer avec le prof : 0xFE + 0x02 = 0x00? (on lève le flag?)
 	
 	S11 <= A11 + B11 when (OP = ADD) else 	-- si ADD, S11 vaut A11+B11, le MSB de S11 vaudra 1 s'il y a débordement
 			 A11 - B11 when (OP = SUB) else 	-- si SUB, S11 vaut A11-B11, le MSB de S11 vaudra 1 si négatif, ex : 0b1111_1111 pour -1
