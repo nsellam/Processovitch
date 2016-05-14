@@ -53,7 +53,7 @@ begin
 	InstructionMemory : process (CLK)
 	begin
 		if rising_edge(CLK) then
-			COUT <= ROM(CONV_INTEGER(signed(address)));	--on passe l'adresse en paramètre de la ROM pour accéder à la ligne en question (l'adresse étant sous forme 0b0001, on la cast en int)
+			COUT <= ROM(CONV_INTEGER(unsigned(address)));	--on passe l'adresse en paramètre de la ROM pour accéder à la ligne en question (l'adresse étant sous forme 0b0001, on la cast en int)
 		end if;
 	end process;
 end Behavioral;

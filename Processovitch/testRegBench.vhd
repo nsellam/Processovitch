@@ -27,6 +27,7 @@
 --------------------------------------------------------------------------------
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
+USE work.processorpack.ALL;
  
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -41,35 +42,35 @@ ARCHITECTURE behavior OF testRegBench IS
  
     COMPONENT RegBench
     PORT(
-         aA : IN  std_logic_vector(3 downto 0);
-         aB : IN  std_logic_vector(3 downto 0);
-         aW : IN  std_logic_vector(3 downto 0);
+         aA : IN  RegAddr;
+         aB : IN  RegAddr;
+         aW : IN  RegAddr;
          W : IN  std_logic;
-         DATA : IN  std_logic_vector(7 downto 0);
+         DATA : IN  WORD;
          RST : IN  std_logic;
          CLK : IN  std_logic;
-         QA : OUT  std_logic_vector(7 downto 0);
-         QB : OUT  std_logic_vector(7 downto 0)
+         QA : OUT  WORD;
+         QB : OUT  WORD
         );
     END COMPONENT;
     
 
    --Inputs
-   signal aA : std_logic_vector(3 downto 0) := (others => '0');
-   signal aB : std_logic_vector(3 downto 0) := (others => '0');
-   signal aW : std_logic_vector(3 downto 0) := (others => '0');
+   signal aA : RegAddr := (others => '0');
+   signal aB : RegAddr := (others => '0');
+   signal aW : RegAddr := (others => '0');
    signal W : std_logic := '0';
-   signal DATA : std_logic_vector(7 downto 0) := (others => '0');
+   signal DATA : WORD := (others => '0');
    signal RST : std_logic := '0';
    signal CLK : std_logic := '0';
 
  	--Outputs
-   signal QA : std_logic_vector(7 downto 0);
-   signal QB : std_logic_vector(7 downto 0);
+   signal QA : WORD;
+   signal QB : WORD;
 
    -- Clock period definitions
    constant CLK_period : time := 10 ns;
- 
+	
 BEGIN
  
 	-- Instantiate the Unit Under Test (UUT)
@@ -97,23 +98,29 @@ BEGIN
 
    -- Stimulus process
    stim_proc: process
+	
    begin		
       -- hold reset state for 100 ns.
-		RST <= '1';
-		DATA <= X"AC";
+			RST <= '1';
+			DATA <= X"AC";
       wait for 100 ns;	
-		W <= '1';
-		aW <= B"0001"; --affiche dans R1 0xAC
+			aW <= X"1"; --affiche dans R1 0xAC
+			W <= '1';
       wait for CLK_period*10;
-		DATA <= X"DC";
-		aW <= B"0010";
-		aB <= B"0010"; --affiche dans R2 0xDC
+			DATA <= X"DC";
+			aW <= X"2";
+			aB <= X"2"; --affiche dans R2 0xDC
 		wait for CLK_period*10;
-		W <= '0';
-		aA <= B"0001"; --retourne 0xAC et 0xDC
-		
+			W <= '0';
+			aA <= X"1"; --retourne 0xAC et 0xDC
+		wait for CLK_period*10;
+			RST <= '0';
+			aW <= X"0";
+		wait for CLK_period*10;
+			W <= '1';
       -- insert stimulus here 
-
+		wait for CLK_period*10;
+			RST <= '1';
       wait;
    end process;
 

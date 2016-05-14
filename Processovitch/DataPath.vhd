@@ -189,8 +189,10 @@ begin
 		CIN => inMD,
 		COUT => inMUX.MD2,
 		RST => '1',
-		RW => not(inPMemRe.OP(3) and not(inPMemRe.OP(2)))); --0W, 1R, donc STORE="1000"->'0' 
-	inPMemRe.B <= inMUX.MD2 when (inPMemRe.OP = LDR) else --on ne cherche dans la RAM que lorsqu'on LOAD
+		RW => not(inPMemRe.OP(3))
+				or inPMemRe.OP(2) 
+				or inPMemRe.OP(1) ); --0W, 1R, donc STORE="1000"->'0' 
+	inPMemRe.B <= inMUX.MD2 when (inPMemRe.OP = LDR) else  --on ne cherche dans la RAM que lorsqu'on LOAD
 							inMD; --sinon on récup B en sortie du Pipe
 	PMemRe: PipeLine port map (
 		CLK => CLK,

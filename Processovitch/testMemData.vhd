@@ -27,6 +27,7 @@
 --------------------------------------------------------------------------------
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
+USE work.processorpack.ALL;
  
 -- Uncomment the following library declaration if using
 -- arithmetic functions with Signed or Unsigned values
@@ -41,25 +42,25 @@ ARCHITECTURE behavior OF testMemData IS
  
     COMPONENT MemData
     PORT(
-         address : IN  std_logic_vector(7 downto 0);
-         CIN : IN  std_logic_vector(7 downto 0);
+         address : IN  WORD;
+         CIN : IN  WORD;
          RW : IN  std_logic;
          RST : IN  std_logic;
          CLK : IN  std_logic;
-         COUT : OUT  std_logic_vector(7 downto 0)
+         COUT : OUT  WORD
         );
     END COMPONENT;
     
 
    --Inputs
-   signal address : std_logic_vector(7 downto 0) := (others => '0');
-   signal CIN : std_logic_vector(7 downto 0) := (others => '0');
+   signal address : WORD := (others => '0');
+   signal CIN : WORD := (others => '0');
    signal RW : std_logic := '0';
    signal RST : std_logic := '0';
    signal CLK : std_logic := '0';
 
  	--Outputs
-   signal COUT : std_logic_vector(7 downto 0);
+   signal COUT : WORD;
 
    -- Clock period definitions
    constant CLK_period : time := 10 ns;
@@ -90,15 +91,33 @@ BEGIN
    stim_proc: process
    begin		
 		RST <= '1';
+		RAM(254) <= X"DC";
       -- hold reset state for 100 ns.
       wait for 100 ns;	
-			address <= B"0000_0001";
+			address <= X"01";
 			CIN <= X"AC";
-			RW <= '0';
+			RW <= '0'; --écriture
       wait for CLK_period*10;
-			RW <= '1';
+			RW <= '1'; --lecture
+			CIN <= X"DC";
       -- insert stimulus here 
-
+		wait for CLK_period*10;
+			RW <= '0';
+			RST <= '0';
+      wait for CLK_period*10;
+			RST <= '1';
+			RW <= '1';
+      -- insert stimulus here 		
+      wait for CLK_period*10;
+			RW <= '0';
+      -- insert stimulus here 
+      wait for CLK_period*10;
+			RST <= '0';
+			RW <= '0';
+      -- insert stimulus here 		
+      wait for CLK_period*10;
+			RST <= '1';
+      -- insert stimulus here 
       wait;
    end process;
 

@@ -50,10 +50,10 @@ begin
 			else
 				if RW = '0' then
 					--On écrit 
-					RAM(CONV_INTEGER(signed(address))) <= CIN; --on passe l'adresse en paramètre de la RAM pour accéder à la ligne en question (l'adresse étant sous forme 0b0001, on la cast en int)
+					RAM(CONV_INTEGER(unsigned(address))) <= CIN; --on passe l'adresse en paramètre de la RAM pour accéder à la ligne en question (l'adresse étant sous forme 0b0001, on la cast en int)
 				else
 					--On lit 
-					COUT <= RAM(CONV_INTEGER(signed(address)));
+					COUT <= RAM(CONV_INTEGER(unsigned(address)));
 				end if;
 			end if;
 		end if;
