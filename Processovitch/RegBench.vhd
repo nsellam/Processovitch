@@ -54,11 +54,9 @@ begin
 				if W = '1' then
 					--écriture de DATA vers le reg d'@W
 					Rx(CONV_INTEGER(unsigned(aW))) <= DATA;		--on passe l'adresse en paramètre de la table pour accéder à la ligne en question (l'adresse étant sous forme 0b0001, on la cast en int)
-				else
-					--lecture 
+				end if;
 					QA <= Rx(CONV_INTEGER(unsigned(aA)));
 					QB <= Rx(CONV_INTEGER(unsigned(aB)));
-				end if;
 			end if;
 		end if;
 	end process;

@@ -103,20 +103,20 @@ BEGIN
       -- hold reset state for 100 ns.
 			RST <= '1';
 			DATA <= X"AC";
-      wait for 100 ns;	
+      wait for 100 ns;	--100ns
 			aW <= X"1"; --affiche dans R1 0xAC
 			W <= '1';
-      wait for CLK_period*10;
+      wait for CLK_period*10;	--200ns
 			DATA <= X"DC";
 			aW <= X"2";
 			aB <= X"2"; --affiche dans R2 0xDC
-		wait for CLK_period*10;
+		wait for CLK_period*10;	--300ns
 			W <= '0';
 			aA <= X"1"; --retourne 0xAC et 0xDC
-		wait for CLK_period*10;
+		wait for CLK_period*10;	--400ns
 			RST <= '0';
 			aW <= X"0";
-		wait for CLK_period*10;
+		wait for CLK_period*10;	--500ns
 			W <= '1';
       -- insert stimulus here 
 		wait for CLK_period*10;

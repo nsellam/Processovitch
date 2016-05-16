@@ -19,6 +19,7 @@
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
 use WORK.ProcessorPack.ALL;
 
 -- Uncomment the following library declaration if using
@@ -97,6 +98,11 @@ architecture Behavioral of DataPath is
 		record
 			RB, UAL, MD1, MD2 : WORD;
 		end record;
+	type LC is
+		record
+			RB, MD : STD_LOGIC;
+			outP : OPT;
+		end record;
 	
 			-- SIGNAUX
 	signal inPLiDi : inPipe;
@@ -107,7 +113,7 @@ architecture Behavioral of DataPath is
 	signal inUAL: inPipe;	 -- .A et .OP non utilisés
 	signal inMUX: MUX;		 -- B
 	signal inMD: WORD;		 -- B
-	signal inLC: OPT;			 -- OP
+	signal inLC: LC;			 -- LC
 	signal inDATARB: WORD;	 -- B
 	
 begin
@@ -118,7 +124,7 @@ begin
 	-- [+++++]MemInstr vers Pipe
 	-- [+++++]CLK à implémenter
 	-- [+++++]Package 
-	-- [-----]Tests
+	-- [++++-]Tests
 
 	MI: MemInstr port map (
 		address => ASM,
@@ -138,6 +144,7 @@ begin
 		outB => inRB.B,			-- P1(outB)  <----B_PLiDi2RB----> MUX
 		outC => inRB.C,			-- P1(outC)  <----C_PLiDi2RB----> RB(aB)
 		outOP => inPDiEx.OP);	-- P1(outOP) <--OP_PLiDi2PDiEx--> P2(inOP)
+	inLC.RB <= '0' when (inLC.outP = STR) else '1';  -- car STR est la seule instruction à ne pas écrire dans les registres (1W, 0R)
 	RB : RegBench port map (
 		CLk => CLK,
 		RST => '1',
@@ -146,7 +153,7 @@ begin
 		QA => inMUX.RB,				
 		QB => inPDiEx.C,				
 		aW => inRB.A(RegCnt-1 downto 0),			-- vient de P_Mem/Re
-		W  => not(inLC(3) and not(inLC(2))), -- car STORE = B"1000" est la seule instruction à ne pas écrire dans les registres (1W, 0R)
+		W  => inLC.RB,
 		DATA => inDATARB);
 	inPDiEx.B <=	inRB.B when (inPDiEx.OP = AFC) else
 							inMUX.RB; -- P2(inB) vaut P1(outB) si AFC, RB(QA) sinon
@@ -183,15 +190,14 @@ begin
 		outOP => inPMemRe.OP);
 	inMUX.MD1 <= inPMemRe.A when (inPMemRe.OP = STR) else 	-- car on a STORE @i Rj
 					 inMD when (inPMemRe.OP = LDR);			-- car on a LOAD  Ri @j
+	inLC.MD <= '0' when (inPMemRe.OP = STR) else '1';  -- car STR est la seule instruction écrire dans la RAM (0W, 1R)
 	MD: MemData port map (
 		CLK => CLK,
 		address => inMUX.MD1,
 		CIN => inMD,
 		COUT => inMUX.MD2,
 		RST => '1',
-		RW => not(inPMemRe.OP(3))
-				or inPMemRe.OP(2) 
-				or inPMemRe.OP(1) ); --0W, 1R, donc STORE="1000"->'0' 
+		RW => inLC.MD);
 	inPMemRe.B <= inMUX.MD2 when (inPMemRe.OP = LDR) else  --on ne cherche dans la RAM que lorsqu'on LOAD
 							inMD; --sinon on récup B en sortie du Pipe
 	PMemRe: PipeLine port map (
@@ -203,6 +209,6 @@ begin
 		outA => inRB.A,			-- P4(outA) <----PMemRe2RB----> RB(aW) --on passe outA en adresse écriture du banc de registre
 		outB => inDATARB,
 		outC => ZERO,
-		outOP => inLC);
+		outOP => inLC.outP);
 end Behavioral;
 
